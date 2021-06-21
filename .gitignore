@@ -1,0 +1,17 @@
+### Python ###
+*.log
+*.pot
+*.pyc
+__pycache__/
+
+# Environments
+env.txt
+github_bot_env
+.env/
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pythonenv*
