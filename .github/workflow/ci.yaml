@@ -1,0 +1,74 @@
+name: Build and Deploy Github Bot
+
+# triggers for the workflow
+on:
+  push:
+    branches:
+      - master
+      - cicd_workflow
+
+env:
+  DOCKER_REPO: "vfilin/github_bot"
+  REPO_URL: "https://api.github.com/repos/vofilin/cocktail_master_infra"
+
+# job definitions
+jobs:
+  package-job: # package job for building and publishing docker image
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code # checking out code.
+        uses: actions/checkout@v2
+      - name: Define varibles
+        run: |
+          cat version.txt >> $GITHUB_ENV
+          echo "BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build & Publish Image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          tags: |
+            ${{ env.DOCKER_REPO }}:${{ env.GITHUB_BOT_VERSION }},
+            ${{ env.DOCKER_REPO }}:latest,
+          push: true
+      - name: Send notification
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            PACKAGE-JOB for *Github bot v${{ env.GITHUB_BOT_VERSION }}*
+            in branch *${{ env.BRANCH }}* completed with a *${{ JOB.STATUS }}*
+
+  deploy-job: # deploy job
+    runs-on: self-hosted
+    needs: [package-job] # will require package-job to be successful for triggering
+    steps:
+      - name: Define varibles
+        run: |
+          cat version.txt >> $GITHUB_ENV
+          echo "BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+      - name: Docker run
+        run: |
+          docker run -d \
+          -e URL="${{ env.REPO_URL }}" \
+          -e BOT_TOKEN="${{ secrets.TELEGRAM_TOKEN }}" \
+          -e AUTH_TOKEN="${{ secrets.AUTH_TOKEN }}" \
+          -e RESTRICTED_IDS="${{ secrets.RESTRICTED_IDS }}" \
+          --name github_bot \
+          ${{ env.DOCKER_REPO }}:${{ env.GITHUB_BOT_VERSION }}
+      - name: Send notification
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            DEPLOY-JOB for *Github bot v${{ env.GITHUB_BOT_VERSION }}*
+            in branch *${{ env.BRANCH }}* completed with a *${{ JOB.STATUS }}*
