@@ -16,7 +16,7 @@ jobs:
   package-job: # package job for building and publishing docker image
     runs-on: self-hosted
     steps:
-      - name: Checkout Code # checking out code.
+      - name: Checkout Code
         uses: actions/checkout@v2
       - name: Define varibles
         run: |
