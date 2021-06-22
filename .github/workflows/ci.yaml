@@ -10,6 +10,7 @@ on:
 env:
   DOCKER_REPO: "vfilin/github_bot"
   REPO_URL: "https://api.github.com/repos/vofilin/cocktail_master_infra"
+  CONTAINER: github_bot
 
 # job definitions
 jobs:
@@ -55,14 +56,18 @@ jobs:
         run: |
           cat version.txt >> $GITHUB_ENV
           echo "BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
-      - name: Docker run
+      - name: Stop and remove previous guthub bot container
+        run: |
+          docker stop ${{ env.CONTAINER }}
+          docker container rm ${{ env.CONTAINER }}
+      - name: Start github bot container
         run: |
           docker run -d \
           -e URL="${{ env.REPO_URL }}" \
           -e BOT_TOKEN="${{ secrets.TELEGRAM_TOKEN }}" \
           -e AUTH_TOKEN="${{ secrets.AUTH_TOKEN }}" \
           -e RESTRICTED_IDS="${{ secrets.RESTRICTED_IDS }}" \
-          --name github_bot \
+          --name ${{ env.CONTAINER }} \
           ${{ env.DOCKER_REPO }}:${{ env.GITHUB_BOT_VERSION }}
       - name: Send notification
         uses: appleboy/telegram-action@master
