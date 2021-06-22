@@ -38,6 +38,7 @@ jobs:
           push: true
       - name: Send notification
         uses: appleboy/telegram-action@master
+        if: ${{ always() }}
         with:
           to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
@@ -65,6 +66,7 @@ jobs:
           ${{ env.DOCKER_REPO }}:${{ env.GITHUB_BOT_VERSION }}
       - name: Send notification
         uses: appleboy/telegram-action@master
+        if: ${{ always() }}
         with:
           to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
